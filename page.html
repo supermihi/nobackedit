@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8"></meta>
+        <title>Ein unfreundlicher Editor</title>
+    </head>
+    <body>
+        <link rel="stylesheet" href="css/local.css" />
+        <link rel="stylesheet" href="css/smoothness/jquery-ui-1.10.2.custom.css" />
+        <script src="js/jquery-1.9.1.js"></script>
+        <script src="js/jquery-ui-1.10.2.custom.js"></script>
+        <script src="js/jcookie-min.js"></script>
+        <script src="js/jstorage.js"></script>
+        <div id="inhalt" class="ui-widget ui-corner-all">
+            
+            <p class="ui-widget-header ui-state-default ui-helper-clearfix ui-corner-all" style="padding:10px">
+                <span style="float:left; margin: -2px 5px 0 0;" class="ui-icon ui-icon-document"></span>
+                Ein unfreundlicher Text-Editor: Erlaubt Änderung nur bei den letzten x Sätzen.
+            </p>
+            
+            <div id="fertig" class="ui-widget-content ui-corner-all"></div>
+            
+            <textarea class="ui-widget-]ontent ui-corner-all" id="ta" rows="10"></textarea>
+
+            <div class="ui-widget-content ui-corner-all">
+            <div>
+                <button id="saveButton">Speichern</button>
+                <button id="resetButton">Zurücksetzen</button>
+            </div>
+            <p>
+            <label for="spinner" style="margin: 10px;">Sätze behalten:</label>
+            <input id="spinner" name="value" />
+            </p>
+            <p>
+                <label id="sliderlabel" for="slider">Helligkeit:</label>
+                <div id="slider"></div>
+            </p>
+            </div>
+            <div id="dialog"></div>
+            
+        </div>
+        
+        <script>
+            $( function() {
+                keepSentences = 1;
+                re = /[\.?!][ \n]/g;
+                $('#ta').keyup(function(event) {
+                    if (event.which == 32 || event.which == 13) {
+                        editText = $('#ta').val();
+                        console.log(editText);
+                        var count = editText.match(re);
+                        if (!count) {
+                            return;
+                        }
+                        if (count.length > keepSentences) {
+                            for (var i=0; i<count.length-keepSentences; i++) {
+                                idx = editText.search(re);
+                                $('#fertig').text($('#fertig').text() + editText.substring(0,idx+2));
+                                editText = editText.substr(idx+2);
+                            }
+                            $('#ta').val(editText);
+                            // store
+                            storeData();
+                        }
+                        
+                    }
+                });
+                var spinner = $("#spinner").spinner();
+                spinner.spinner("value", 1);
+                spinner.on("spin", function(event, ui) {
+                    keepSentences = ui.value;
+                });
+                var changeColor = function() {
+                    val = $("#slider").slider("value");
+                    hex = val.toString(16);
+                    if (hex.length == 1)
+                        hex = "0" + hex;
+                    $( "#fertig" ).css( "color", "#"+hex+hex+hex);
+                    
+                };
+                var storeData = function() {
+                    jQuery.storage.setItem('rdyText', $('#fertig').text(), 'cookie');
+                    jQuery.storage.setItem('curText', $('#ta').val(), 'cookie');
+                }
+                $( "#slider" ).slider({max:255, value: 187, slide: changeColor});
+                $( "#inhalt" ).resizable({handles : "w,e"});
+                $(window).unload(storeData);
+                $('#fertig').text(jQuery.storage.getItem('rdyText', 'cookie'));
+                $('#ta').val(jQuery.storage.getItem('curText', 'cookie'));
+                $('#saveButton').button().click(function(event) {
+                    $("#dialog").html($("#fertig").text() + $("#ta").val());
+                    $("#dialog").dialog("open");
+                });
+                $('#dialog').dialog({autoOpen : false, height: 400, width: 500, modal: true, title: "Text mit Strg+C kopieren"});
+                $('#resetButton').button().click(function(event) { $('#ta').val(""); $('#fertig').text(""); });
+            });
+        </script>
+    </body>
+</html>
